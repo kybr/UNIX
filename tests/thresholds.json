@@ -1,0 +1,42 @@
+{
+  "audio_quality": {
+    "thd_db": -60,
+    "snr_db": 90,
+    "frequency_accuracy_cents": 50,
+    "dc_offset_threshold": 0.03,
+    "aliasing_threshold_db": -80
+  },
+  "performance": {
+    "cpu_idle_percent": 10.0,
+    "cpu_single_voice_percent": 1.0,
+    "cpu_8_voices_percent": 5.0,
+    "cpu_16_voices_percent": 10.0,
+    "cpu_32_voices_percent": 20.0,
+    "ram_baseline_mb": 50,
+    "ram_max_mb": 200,
+    "ram_leak_threshold_mb": 10,
+    "realtime_ratio": 0.5,
+    "latency_ms": 10
+  },
+  "midi": {
+    "note_on_latency_ms": 5,
+    "note_off_latency_ms": 5,
+    "min_polyphony": 32,
+    "velocity_response_tolerance": 0.05
+  },
+  "validation": {
+    "pluginval_min_level": 5,
+    "pluginval_target_level": 10,
+    "clap_validator_pass": true
+  },
+  "gui": {
+    "launch_timeout_seconds": 10,
+    "screenshot_diff_threshold": 0.02,
+    "control_response_ms": 100
+  },
+  "stress": {
+    "max_polyphony_test": 128,
+    "long_session_hours": 1,
+    "rapid_param_changes_per_second": 1000
+  }
+}

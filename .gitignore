@@ -1,0 +1,13 @@
+# Claude Code
+.claude/
+
+# Local docs
+docs/
+
+# External libraries
+allolib/
+
+# Build
+build/
+*.o
+*.exe

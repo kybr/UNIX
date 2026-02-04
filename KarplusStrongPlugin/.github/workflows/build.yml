@@ -1,0 +1,236 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Release
+  JUCE_VERSION: "7.0.9"
+
+jobs:
+  # ===========================================================================
+  # Windows Build
+  # ===========================================================================
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: microsoft/setup-msbuild@v1.3
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+
+      - name: Build
+        run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+
+      - name: Upload VST3
+        uses: actions/upload-artifact@v4
+        with:
+          name: KarplusStrong-Windows-VST3
+          path: build/KarplusStrongPlugin_artefacts/${{ env.BUILD_TYPE }}/VST3/*.vst3
+
+      - name: Upload Standalone
+        uses: actions/upload-artifact@v4
+        with:
+          name: KarplusStrong-Windows-Standalone
+          path: build/KarplusStrongPlugin_artefacts/${{ env.BUILD_TYPE }}/Standalone/*.exe
+
+  # ===========================================================================
+  # macOS Build
+  # ===========================================================================
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: brew install ninja
+
+      - name: Configure CMake
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+
+      - name: Build
+        run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+
+      - name: Upload VST3
+        uses: actions/upload-artifact@v4
+        with:
+          name: KarplusStrong-macOS-VST3
+          path: build/KarplusStrongPlugin_artefacts/${{ env.BUILD_TYPE }}/VST3/*.vst3
+
+      - name: Upload AU
+        uses: actions/upload-artifact@v4
+        with:
+          name: KarplusStrong-macOS-AU
+          path: build/KarplusStrongPlugin_artefacts/${{ env.BUILD_TYPE }}/AU/*.component
+
+      - name: Upload Standalone
+        uses: actions/upload-artifact@v4
+        with:
+          name: KarplusStrong-macOS-Standalone
+          path: build/KarplusStrongPlugin_artefacts/${{ env.BUILD_TYPE }}/Standalone/*.app
+
+  # ===========================================================================
+  # Linux Build
+  # ===========================================================================
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev \
+            libjack-jackd2-dev \
+            ladspa-sdk \
+            libcurl4-openssl-dev \
+            libfreetype6-dev \
+            libx11-dev \
+            libxcomposite-dev \
+            libxcursor-dev \
+            libxext-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libxrender-dev \
+            libwebkit2gtk-4.0-dev \
+            libglu1-mesa-dev \
+            mesa-common-dev \
+            ninja-build
+
+      - name: Configure CMake
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+
+      - name: Build
+        run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+
+      - name: Upload VST3
+        uses: actions/upload-artifact@v4
+        with:
+          name: KarplusStrong-Linux-VST3
+          path: build/KarplusStrongPlugin_artefacts/${{ env.BUILD_TYPE }}/VST3/*.vst3
+
+      - name: Upload Standalone
+        uses: actions/upload-artifact@v4
+        with:
+          name: KarplusStrong-Linux-Standalone
+          path: build/KarplusStrongPlugin_artefacts/${{ env.BUILD_TYPE }}/Standalone/*
+
+  # ===========================================================================
+  # Plugin Validation (using pluginval)
+  # ===========================================================================
+  validate:
+    needs: [build-windows, build-macos, build-linux]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: KarplusStrong-Windows-VST3
+            pluginval-url: https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip
+            plugin-path: "*.vst3"
+          - os: macos-latest
+            artifact: KarplusStrong-macOS-VST3
+            pluginval-url: https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip
+            plugin-path: "*.vst3"
+          - os: ubuntu-latest
+            artifact: KarplusStrong-Linux-VST3
+            pluginval-url: https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Linux.zip
+            plugin-path: "*.vst3"
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Download Plugin Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: plugin
+
+      - name: Download pluginval
+        run: |
+          curl -L -o pluginval.zip "${{ matrix.pluginval-url }}"
+          unzip pluginval.zip
+
+      - name: Install Linux Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libfreetype6-dev \
+            libx11-dev libxcomposite-dev libxcursor-dev libxext-dev \
+            libxinerama-dev libxrandr-dev libxrender-dev
+
+      - name: Run pluginval (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          ./pluginval.exe --strictness-level 5 --validate-in-process --timeout-ms 90000 "plugin/${{ matrix.plugin-path }}"
+
+      - name: Run pluginval (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          chmod +x pluginval.app/Contents/MacOS/pluginval
+          pluginval.app/Contents/MacOS/pluginval --strictness-level 5 --validate-in-process --timeout-ms 90000 "plugin/${{ matrix.plugin-path }}"
+
+      - name: Run pluginval (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          chmod +x ./pluginval
+          ./pluginval --strictness-level 5 --validate-in-process --timeout-ms 90000 "plugin/${{ matrix.plugin-path }}"
+
+  # ===========================================================================
+  # Unit Tests
+  # ===========================================================================
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev libfreetype6-dev \
+            libx11-dev libxcomposite-dev libxcursor-dev libxext-dev \
+            libxinerama-dev libxrandr-dev libxrender-dev \
+            ninja-build
+
+      - name: Configure CMake with Tests
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON
+
+      - name: Build Tests
+        run: cmake --build build --target KarplusStrongTests
+
+      - name: Run Tests
+        run: ctest --test-dir build --output-on-failure
+
+  # ===========================================================================
+  # Create Release
+  # ===========================================================================
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [validate, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Archives
+        run: |
+          cd artifacts
+          for dir in */; do
+            zip -r "${dir%/}.zip" "$dir"
+          done
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*.zip
+          generate_release_notes: true

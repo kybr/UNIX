@@ -1,0 +1,59 @@
+# UNIX Audio Plugin - Test Suite Dependencies
+# Install: pip install -r tests/requirements.txt
+
+# =============================================================================
+# Core Testing Framework
+# =============================================================================
+pytest>=7.4.0
+pytest-xdist>=3.3.0          # Parallel test execution
+pytest-timeout>=2.2.0        # Test timeouts
+pytest-benchmark>=4.0.0      # Performance benchmarking
+pytest-html>=4.1.0           # HTML reports
+
+# =============================================================================
+# Audio Analysis & Processing
+# =============================================================================
+numpy>=1.24.0
+scipy>=1.11.0
+soundfile>=0.12.0            # WAV file I/O
+librosa>=0.10.0              # Audio analysis (FFT, spectral)
+
+# =============================================================================
+# MIDI Handling
+# =============================================================================
+mido>=1.3.0                  # MIDI file creation/parsing
+python-rtmidi>=1.5.0         # Real-time MIDI I/O
+
+# =============================================================================
+# Plugin Hosting
+# =============================================================================
+dawdreamer>=0.8.0            # VST3/AU plugin host for testing
+
+# =============================================================================
+# GUI Automation
+# =============================================================================
+pyautogui>=0.9.54            # Mouse/keyboard automation
+Pillow>=10.0.0               # Screenshot handling
+opencv-python>=4.8.0         # Image comparison/diffing
+pygetwindow>=0.0.9           # Window management
+
+# =============================================================================
+# Performance Monitoring
+# =============================================================================
+psutil>=5.9.0                # CPU/RAM monitoring
+py-cpuinfo>=9.0.0            # CPU info for benchmarks
+
+# =============================================================================
+# Reporting & Visualization
+# =============================================================================
+jinja2>=3.1.0                # Report templating
+matplotlib>=3.7.0            # Charts/graphs
+pandas>=2.0.0                # Data analysis
+
+# =============================================================================
+# Utilities
+# =============================================================================
+requests>=2.31.0             # Download tools
+pyyaml>=6.0.0                # Config files
+colorama>=0.4.6              # Colored terminal output
+tqdm>=4.66.0                 # Progress bars

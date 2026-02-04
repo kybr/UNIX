@@ -14,3 +14,4 @@ add_executable(impulse-sweep impulse-sweep.cpp)
 
 add_executable(impulse impulse.cpp)
 add_executable(phasor phasor.cpp)
+add_executable(karplus-strong karplus-strong.cpp)
